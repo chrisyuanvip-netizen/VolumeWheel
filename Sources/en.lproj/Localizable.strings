@@ -12,6 +12,16 @@
 	<string>No adjustable output devices found</string>
 	<key>Activation Zone Height</key>
 	<string>Activation Zone Height</string>
+	<key>Settings</key>
+	<string>Settings</string>
+	<key>Scroll Step (per notch)</key>
+	<string>Scroll Step (per notch)</string>
+	<key>1% per notch</key>
+	<string>1% per notch</string>
+	<key>2% per notch</key>
+	<string>2% per notch</string>
+	<key>5% per notch</key>
+	<string>5% per notch</string>
 	<key>40 pt (near the bottom)</key>
 	<string>40 pt (near the bottom)</string>
 	<key>70 pt (dock area, recommended)</key>

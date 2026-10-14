@@ -12,6 +12,16 @@
 	<string>（未找到可调节音量的输出设备）</string>
 	<key>Activation Zone Height</key>
 	<string>激活区高度</string>
+	<key>Settings</key>
+	<string>设置</string>
+	<key>Scroll Step (per notch)</key>
+	<string>滚动步长（每格）</string>
+	<key>1% per notch</key>
+	<string>每格 1%</string>
+	<key>2% per notch</key>
+	<string>每格 2%</string>
+	<key>5% per notch</key>
+	<string>每格 5%</string>
 	<key>40 pt (near the bottom)</key>
 	<string>40 pt（贴近屏幕底部）</string>
 	<key>70 pt (dock area, recommended)</key>

@@ -95,7 +95,11 @@ final class AppState {
     static let shared = AppState()
     var enabled = true
     var zoneHeight: CGFloat = 70          // 屏幕底部激活区高度（pt）
-    var step: Float = 0.02                // 每格滚动音量步进
+    // 每格滚动音量步进（百分比，持久化，默认 1%）
+    var step: Float {
+        get { Float(UserDefaults.standard.object(forKey: "vwStepPercent") as? Int ?? 1) / 100.0 }
+        set { UserDefaults.standard.set(Int(round(newValue * 100)), forKey: "vwStepPercent") }
+    }
     var deviceID: AudioObjectID = 0       // 0 = 跟随系统默认输出设备
     var tap: CFMachPort?
     var runLoopSource: CFRunLoopSource?
@@ -146,7 +150,7 @@ final class VolumeBarView: NSView {
         NSColor(calibratedRed: 0.38, green: 0.78, blue: 1.0, alpha: 1.0).setFill()
         NSBezierPath(roundedRect: fill, xRadius: trackH / 2, yRadius: trackH / 2).fill()
 
-        let pct = String(Int(v * 100))
+        let pct = Int(v * 100)
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
             .foregroundColor: NSColor.white
@@ -238,6 +242,9 @@ let eventCallback: CGEventTapCallBack = { _, _, event, userInfo in
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
+    private var retryTimer: Timer?
+    private var retryCount = 0
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let state = AppState.shared
         state.log("== launched ==")
@@ -253,6 +260,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupEventTap()
         checkPermissions()
+        startTapSelfHeal()
+    }
+
+    // MARK: 自愈：tap 未就绪时自动重试
+
+    func startTapSelfHeal() {
+        scheduleTapRetry()
+    }
+
+    func scheduleTapRetry() {
+        retryTimer?.invalidate()
+        let state = AppState.shared
+        if state.tap != nil { return }          // 已就绪，无需重试
+        retryCount += 1
+        if retryCount > 40 {                    // 上限（约 3 分钟后停止），避免无限请求
+            state.log("自愈停止：重试达到上限")
+            return
+        }
+        retryTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            let st = AppState.shared
+            if st.tap == nil {
+                st.log("自愈重试 #\(self.retryCount): listen=\(CGPreflightListenEventAccess())")
+                if CGPreflightListenEventAccess() {
+                    self.setupEventTap()        // 权限已就绪，重建 tap
+                } else if self.retryCount == 1 {
+                    _ = CGRequestListenEventAccess()  // 仅首次主动请求一次，避免反复弹窗
+                }
+                if st.tap == nil {
+                    self.scheduleTapRetry()     // 继续重试
+                }
+            }
+        }
     }
 
     // MARK: 菜单
@@ -281,9 +321,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         devItem.submenu = dsub
         m.addItem(devItem)
 
-        // 激活区高度
-        let zone = NSMenuItem(title: loc("Activation Zone Height"), action: nil, keyEquivalent: "")
-        let sub = NSMenu()
+        // 设置（激活区高度 + 滚动步长）
+        let settings = NSMenuItem(title: loc("Settings"), action: nil, keyEquivalent: "")
+        let ssub = NSMenu()
+
+        let zoneTitle = NSMenuItem(title: loc("Activation Zone Height"), action: nil, keyEquivalent: "")
+        zoneTitle.isEnabled = false
+        ssub.addItem(zoneTitle)
         let presets: [(String, CGFloat)] = [
             (loc("40 pt (near the bottom)"), 40),
             (loc("70 pt (dock area, recommended)"), 70),
@@ -296,10 +340,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             it.target = self
             it.representedObject = h
             it.state = (h == state.zoneHeight) ? .on : .off
-            sub.addItem(it)
+            ssub.addItem(it)
         }
-        zone.submenu = sub
-        m.addItem(zone)
+
+        ssub.addItem(.separator())
+
+        let stepTitle = NSMenuItem(title: loc("Scroll Step (per notch)"), action: nil, keyEquivalent: "")
+        stepTitle.isEnabled = false
+        ssub.addItem(stepTitle)
+        let steps: [(String, Int)] = [
+            (loc("1% per notch"), 1),
+            (loc("2% per notch"), 2),
+            (loc("5% per notch"), 5)
+        ]
+        let currentStep = Int(round(state.step * 100))
+        for (label, p) in steps {
+            let it = NSMenuItem(title: label, action: #selector(setStep(_:)), keyEquivalent: "")
+            it.target = self
+            it.representedObject = p
+            it.state = (p == currentStep) ? .on : .off
+            ssub.addItem(it)
+        }
+
+        settings.submenu = ssub
+        m.addItem(settings)
 
         m.addItem(.separator())
         m.addItem(NSMenuItem(title: loc("Show Current Volume"), action: #selector(showVolume), keyEquivalent: "v"))
@@ -358,6 +422,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func setZone(_ sender: NSMenuItem) {
         guard let h = sender.representedObject as? CGFloat else { return }
         AppState.shared.zoneHeight = h
+        buildMenu()
+    }
+
+    @objc func setStep(_ sender: NSMenuItem) {
+        guard let p = sender.representedObject as? Int else { return }
+        AppState.shared.step = Float(p) / 100.0
         buildMenu()
     }
 
