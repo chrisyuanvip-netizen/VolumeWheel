@@ -55,7 +55,7 @@ cat > ~/Library/LaunchAgents/com.local.volumewheel.plist <<'EOF'
 <plist version="1.0">
 <dict>
   <key>Label</key><string>com.local.volumewheel</string>
-  <key>ProgramArguments</key><array><string>/Applications/VolumeWheel.app/Contents/MacOS/VolumeWheel</string></array>
+  <key>ProgramArguments</key><array><string>/bin/sh</string><string>-c</string><string>sleep 8; exec /Applications/VolumeWheel.app/Contents/MacOS/VolumeWheel</string></array>
   <key>RunAtLoad</key><true/>
 </dict>
 </plist>
