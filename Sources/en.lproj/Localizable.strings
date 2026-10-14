@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Enable Scroll Volume</key>
+	<string>Enable Scroll Volume</string>
+	<key>Output Device</key>
+	<string>Output Device</string>
+	<key>Follow System Default</key>
+	<string>Follow System Default</string>
+	<key>No Adjustable Output Devices</key>
+	<string>No adjustable output devices found</string>
+	<key>Activation Zone Height</key>
+	<string>Activation Zone Height</string>
+	<key>40 pt (near the bottom)</key>
+	<string>40 pt (near the bottom)</string>
+	<key>70 pt (dock area, recommended)</key>
+	<string>70 pt (dock area, recommended)</string>
+	<key>120 pt</key>
+	<string>120 pt</string>
+	<key>200 pt</key>
+	<string>200 pt</string>
+	<key>Anywhere (global)</key>
+	<string>Anywhere (global)</string>
+	<key>Show Current Volume</key>
+	<string>Show Current Volume</string>
+	<key>Re-authorize Permission</key>
+	<string>Re-authorize Permission</string>
+	<key>About</key>
+	<string>About</string>
+	<key>Quit VolumeWheel</key>
+	<string>Quit VolumeWheel</string>
+	<key>Volume  %d%%</key>
+	<string>Volume  %d%%</string>
+	<key>Device %d</key>
+	<string>Device %d</string>
+	<key>OK</key>
+	<string>OK</string>
+	<key>about_info</key>
+	<string>A global volume wheel control tool.
+
+When the mouse hovers over the dock area at the bottom of the screen, scrolling the wheel adjusts the system volume.
+You can choose which output device to control from the menu.
+
+Requires “Input Monitoring” permission for global scroll monitoring.</string>
+	<key>Input Monitoring Permission Required</key>
+	<string>Input Monitoring Permission Required</string>
+	<key>permission_info</key>
+	<string>Please open System Settings → Privacy &amp; Security → Input Monitoring and enable VolumeWheel.
+
+If the system dialog did not appear, click “Open System Settings” to grant access manually.
+Quit and reopen VolumeWheel after enabling it.</string>
+	<key>Open System Settings</key>
+	<string>Open System Settings</string>
+	<key>Later</key>
+	<string>Later</string>
+</dict>
+</plist>

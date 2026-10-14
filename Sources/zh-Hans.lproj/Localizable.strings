@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Enable Scroll Volume</key>
+	<string>启用滚轮调音</string>
+	<key>Output Device</key>
+	<string>输出设备</string>
+	<key>Follow System Default</key>
+	<string>跟随系统默认设备</string>
+	<key>No Adjustable Output Devices</key>
+	<string>（未找到可调节音量的输出设备）</string>
+	<key>Activation Zone Height</key>
+	<string>激活区高度</string>
+	<key>40 pt (near the bottom)</key>
+	<string>40 pt（贴近屏幕底部）</string>
+	<key>70 pt (dock area, recommended)</key>
+	<string>70 pt（程序坞区域，推荐）</string>
+	<key>120 pt</key>
+	<string>120 pt</string>
+	<key>200 pt</key>
+	<string>200 pt</string>
+	<key>Anywhere (global)</key>
+	<string>任意位置（全局）</string>
+	<key>Show Current Volume</key>
+	<string>显示当前音量</string>
+	<key>Re-authorize Permission</key>
+	<string>重新授权</string>
+	<key>About</key>
+	<string>关于</string>
+	<key>Quit VolumeWheel</key>
+	<string>退出 VolumeWheel</string>
+	<key>Volume  %d%%</key>
+	<string>音量  %d%%</string>
+	<key>Device %d</key>
+	<string>设备 %d</string>
+	<key>OK</key>
+	<string>好</string>
+	<key>about_info</key>
+	<string>全局音量滚轮控制工具
+
+鼠标悬停在屏幕底部程序坞区域时，滚动滚轮即可调节系统音量。
+可在菜单中指定要控制的输出设备。
+
+需要“输入监控”权限用于全局监听滚轮。</string>
+	<key>Input Monitoring Permission Required</key>
+	<string>需要“输入监控”权限</string>
+	<key>permission_info</key>
+	<string>请到“系统设置 → 隐私与安全 → 输入监控”，勾选 VolumeWheel。
+
+如果刚才的系统弹窗没有出现，请点“打开系统设置”手动授权。
+勾选后退出并重新打开 VolumeWheel 即可生效。</string>
+	<key>Open System Settings</key>
+	<string>打开系统设置</string>
+	<key>Later</key>
+	<string>稍后</string>
+</dict>
+</plist>
