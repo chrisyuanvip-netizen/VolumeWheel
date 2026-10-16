@@ -52,14 +52,35 @@
 鼠标悬停在屏幕底部程序坞区域时，滚动滚轮即可调节系统音量。
 可在菜单中指定要控制的输出设备。
 
-需要“输入监控”权限用于全局监听滚轮。</string>
+权限说明：
+•「输入监控」—— 必需，用于监听滚轮事件。
+•「辅助功能」—— 可选；没有它也能正常调音量，只是 Dock 区域的滚轮不再被吞掉（会同时传给下层窗口）。</string>
+	<key>Input Monitoring</key>
+	<string>输入监控</string>
+	<key>Accessibility</key>
+	<string>辅助功能</string>
 	<key>Input Monitoring Permission Required</key>
 	<string>需要“输入监控”权限</string>
+	<key>Accessibility Permission Required</key>
+	<string>需要“辅助功能”权限</string>
 	<key>permission_info</key>
-	<string>请到“系统设置 → 隐私与安全 → 输入监控”，勾选 VolumeWheel。
+	<string>VolumeWheel 需要两项互相独立的权限：
 
-如果刚才的系统弹窗没有出现，请点“打开系统设置”手动授权。
-勾选后退出并重新打开 VolumeWheel 即可生效。</string>
+•「输入监控」—— 系统设置 → 隐私与安全性 → 输入监控
+  必需。没有它 App 完全看不到滚轮事件。
+
+•「辅助功能」—— 系统设置 → 隐私与安全性 → 辅助功能
+  可选。没有它也能正常调音量，但 Dock 区域的滚轮会同时滚动下层窗口（不会被吞掉）。
+
+两项权限都是立即生效，不需要重启 App。</string>
+	<key>Grant Accessibility (to swallow scroll)</key>
+	<string>授权辅助功能（可吞掉 Dock 区滚轮）…</string>
+	<key>mode: swallowing scroll</key>
+	<string>已吞掉滚轮事件</string>
+	<key>mode: listen only (no swallowing)</key>
+	<string>仅监听（不吞事件）</string>
+	<key>mode: not working yet</key>
+	<string>尚未生效</string>
 	<key>Open System Settings</key>
 	<string>打开系统设置</string>
 	<key>Later</key>

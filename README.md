@@ -38,29 +38,83 @@ Copy `build/VolumeWheel.app` to your `/Applications` folder.
 
 ## First-run setup (macOS requires this)
 
-Global scroll monitoring needs the **Input Monitoring** permission:
+VolumeWheel uses two independent permissions, and deliberately degrades gracefully instead of
+refusing to work:
 
-1. Open **System Settings → Privacy & Security → Input Monitoring**
-2. Enable **VolumeWheel** (add it with **+** if it isn't listed)
-3. Launch the app. When the mouse is over the Dock area, scroll to adjust volume.
+| Permission | Needed for | If missing |
+|---|---|---|
+| **Input Monitoring** | Observing the scroll wheel at all | The app cannot do anything; it keeps retrying until you grant it |
+| **Accessibility** | *Swallowing* the scroll event in the Dock area | The app still works — volume changes normally — but the scroll also reaches the window underneath |
 
-> Note: directly running `.../VolumeWheel.app/Contents/MacOS/VolumeWheel` (or a login LaunchAgent) is the most reliable way to launch, since double-clicking a locally-built app can occasionally cause event monitoring to stop working.
+On first launch the app asks for both itself (standard macOS prompts). To grant them manually:
 
-### Auto-start on login (optional)
+1. **System Settings → Privacy & Security → Input Monitoring** → enable **VolumeWheel**
+2. **System Settings → Privacy & Security → Accessibility** → enable **VolumeWheel**
+   (add it with **+** if it isn't listed)
+
+Both take effect immediately — no relaunch needed. The menu bar item shows the live state, e.g.
+`Input Monitoring ✓   Accessibility ✗   ·   listen only (no swallowing)`, and offers a shortcut to the
+Accessibility pane while it is missing.
+
+> Note: how you launch the app matters. Launch it the normal way (Finder / Dock / Login Item) so that
+> macOS attributes the permission to the app itself. Launching the raw binary from a terminal, or from
+> a sandboxed/agent parent process, makes the TCC check fail even though the switches in System
+> Settings are on.
+
+### Auto-start on login
+
+Use the standard **System Settings → General → Login Items → Open at Login** entry. That is enough:
+the app recovers by itself if macOS has not finished bringing up the per-user privacy service
+(`tccd`) in the first seconds after login. On such an early launch `CGEventTapCreate` fails, and the
+app keeps retrying (5 s, then 15 s, forever) and also re-arms the tap whenever the session becomes
+active, the screen is unlocked, or the Mac wakes from sleep.
+
+Do **not** use a `LaunchAgent` with a fixed `sleep N` workaround: the delay needed varies per boot
+(it was over 10 minutes on the machine this was debugged on), and running the binary directly bypasses
+LaunchServices so the permission can be attributed to the wrong process. If you do install a
+LaunchAgent, remove the Login Item first — otherwise two copies start and every scroll notch changes
+the volume twice.
+
+The app also re-enables its event tap when macOS disables it (`kCGEventTapDisabledByTimeout` /
+`kCGEventTapDisabledByUserInput`), which is what used to make it silently stop working after sleep,
+wake, or heavy system load.
+
+### A note on signing and re-granting
+
+TCC records permissions against the **code identity** of the binary, and that identity is derived from
+how the app is signed:
+
+| Signing | Designated Requirement | Survives a rebuild? |
+|---|---|---|
+| **ad-hoc** (`codesign -s -`, what the old `build.sh` did) | `cdhash H"…"` | ❌ No — every build is a new identity, so every rebuild asks for the permission again |
+| **Apple Development** (what `build.sh` uses now) | `identifier "…" and certificate leaf[subject.CN] = "Apple Development: …"` | ✅ Yes — same certificate ⇒ same requirement |
+| **Developer ID + notarized** (`release.sh`) | `identifier "…" and anchor apple generic and certificate leaf[subject.OU] = "<TEAMID>"` | ✅ Yes — and it is also what lets other people run the app |
+
+So the “re-authorize after every rebuild” problem was caused by **ad-hoc signing**, not by using a
+development certificate. If you only build for yourself, `./build.sh` is enough. To clear stale records
+for this bundle id (e.g. left behind by old ad-hoc builds):
 
 ```bash
-cat > ~/Library/LaunchAgents/com.local.volumewheel.plist <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>Label</key><string>com.local.volumewheel</string>
-  <key>ProgramArguments</key><array><string>/bin/sh</string><string>-c</string><string>sleep 8; exec /Applications/VolumeWheel.app/Contents/MacOS/VolumeWheel</string></array>
-  <key>RunAtLoad</key><true/>
-</dict>
-</plist>
-EOF
-launchctl load ~/Library/LaunchAgents/com.local.volumewheel.plist
+tccutil reset All com.local.volumewheel
+```
+
+### Releasing to other people: Developer ID + notarization
+
+```bash
+./release.sh --setup-credentials   # once: stores an app-specific password in the keychain
+./release.sh                       # build → sign → notarize → staple → verify
+./release.sh --sign-only           # sign and self-check only
+```
+
+`release.sh` requires a **paid Apple Developer Program membership** (US$99/year) to issue a
+`Developer ID Application` certificate; it prints step-by-step instructions and exits cleanly when the
+certificate is missing. It signs with hardened runtime + a secure timestamp, submits the app to Apple's
+notary service with `notarytool`, staples the ticket, and finally checks it with `spctl`.
+
+Per-scroll logging is off by default. To turn it on for debugging:
+
+```bash
+defaults write com.local.volumewheel vwVerboseLog -bool true   # log: /tmp/vw_log.txt
 ```
 
 ## Usage

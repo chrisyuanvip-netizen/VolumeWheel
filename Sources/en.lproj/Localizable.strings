@@ -52,14 +52,35 @@
 When the mouse hovers over the dock area at the bottom of the screen, scrolling the wheel adjusts the system volume.
 You can choose which output device to control from the menu.
 
-Requires “Input Monitoring” permission for global scroll monitoring.</string>
+Permissions:
+• “Input Monitoring” — required, to observe the scroll wheel.
+• “Accessibility” — optional; without it the app still works, but scroll events in the dock area are no longer swallowed (they also reach the window underneath).</string>
+	<key>Input Monitoring</key>
+	<string>Input Monitoring</string>
+	<key>Accessibility</key>
+	<string>Accessibility</string>
 	<key>Input Monitoring Permission Required</key>
 	<string>Input Monitoring Permission Required</string>
+	<key>Accessibility Permission Required</key>
+	<string>Accessibility Permission Required</string>
 	<key>permission_info</key>
-	<string>Please open System Settings → Privacy &amp; Security → Input Monitoring and enable VolumeWheel.
+	<string>VolumeWheel needs two separate permissions:
 
-If the system dialog did not appear, click “Open System Settings” to grant access manually.
-Quit and reopen VolumeWheel after enabling it.</string>
+• Input Monitoring — System Settings → Privacy &amp; Security → Input Monitoring
+  Required. Without it the app cannot see the scroll wheel at all.
+
+• Accessibility — System Settings → Privacy &amp; Security → Accessibility
+  Optional. Without it the app still works, but scrolling in the dock area also scrolls the window underneath instead of being swallowed.
+
+Both permissions take effect immediately — no need to relaunch.</string>
+	<key>Grant Accessibility (to swallow scroll)</key>
+	<string>Grant Accessibility (to swallow scroll)…</string>
+	<key>mode: swallowing scroll</key>
+	<string>scroll swallowed</string>
+	<key>mode: listen only (no swallowing)</key>
+	<string>listen only (no swallowing)</string>
+	<key>mode: not working yet</key>
+	<string>not working yet</string>
 	<key>Open System Settings</key>
 	<string>Open System Settings</string>
 	<key>Later</key>
