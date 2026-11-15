@@ -48,15 +48,48 @@ func deviceName(_ dev: AudioObjectID) -> String {
     return n as String
 }
 
-/// 该设备是否支持以音量标量（volume scalar）方式调节
-func supportsVolume(_ dev: AudioObjectID) -> Bool {
-    var addr = AudioObjectPropertyAddress(
+// MARK: 音量通道（volume element）
+//
+// 设备的音量不一定挂在「主元素」(element 0) 上：
+//   · 内置扬声器 / 3.5mm 耳机口：只有主元素
+//   · 蓝牙耳机（A2DP）、部分 USB/HDMI 声卡：**没有主元素**，音量分散在各声道上
+//     （element 1 = 左, element 2 = 右 …）
+// 旧代码只认主元素，于是在蓝牙耳机上 deviceVolume() 返回 nil，滚轮直接失效。
+
+func volumeAddr(_ element: UInt32) -> AudioObjectPropertyAddress {
+    AudioObjectPropertyAddress(
         mSelector: kAudioDevicePropertyVolumeScalar,
         mScope: kAudioDevicePropertyScopeOutput,
-        mElement: kAudioObjectPropertyElementMain)
-    var v: Float32 = 0
-    var size = UInt32(MemoryLayout<Float32>.size)
-    return AudioObjectGetPropertyData(dev, &addr, 0, nil, &size, &v) == noErr
+        mElement: element)
+}
+
+func elementIsSettable(_ dev: AudioObjectID, _ element: UInt32) -> Bool {
+    var addr = volumeAddr(element)
+    guard AudioObjectHasProperty(dev, &addr) else { return false }
+    var settable: DarwinBoolean = false
+    guard AudioObjectIsPropertySettable(dev, &addr, &settable) == noErr else { return false }
+    return settable.boolValue
+}
+
+/// 该设备可用于读写的音量元素。
+/// 有主元素就只返回主元素（一次读写搞定）；否则返回所有可写声道。
+func volumeElements(_ dev: AudioObjectID) -> [UInt32] {
+    guard dev != 0 else { return [] }
+    if elementIsSettable(dev, kAudioObjectPropertyElementMain) {
+        return [kAudioObjectPropertyElementMain]
+    }
+    // 没有主音量：回退到分声道（蓝牙耳机走这条）
+    var found: [UInt32] = []
+    for ch in UInt32(1)...UInt32(32) where elementIsSettable(dev, ch) {
+        found.append(ch)
+        if found.count >= 8 { break }   // 防御：异常设备不会让我们扫太久
+    }
+    return found
+}
+
+/// 该设备是否支持以音量标量（volume scalar）方式调节
+func supportsVolume(_ dev: AudioObjectID) -> Bool {
+    !volumeElements(dev).isEmpty
 }
 
 /// 可调节音量的输出设备列表
@@ -66,27 +99,44 @@ func outputDevices() -> [(id: AudioObjectID, name: String)] {
     }
 }
 
+/// 读取音量。分声道设备取各声道平均值，避免左右不一致时跳变。
 func deviceVolume(_ dev: AudioObjectID) -> Float? {
     guard dev != 0 else { return nil }
-    var addr = AudioObjectPropertyAddress(
-        mSelector: kAudioDevicePropertyVolumeScalar,
-        mScope: kAudioDevicePropertyScopeOutput,
-        mElement: kAudioObjectPropertyElementMain)
-    var v: Float32 = 0
-    var size = UInt32(MemoryLayout<Float32>.size)
-    guard AudioObjectGetPropertyData(dev, &addr, 0, nil, &size, &v) == noErr else { return nil }
-    return v
+    let elements = volumeElements(dev)
+    guard !elements.isEmpty else { return nil }
+
+    var values: [Float] = []
+    for element in elements {
+        var addr = volumeAddr(element)
+        var v: Float32 = 0
+        var size = UInt32(MemoryLayout<Float32>.size)
+        if AudioObjectGetPropertyData(dev, &addr, 0, nil, &size, &v) == noErr {
+            values.append(v)
+        }
+    }
+    guard !values.isEmpty else { return nil }
+    return values.reduce(0, +) / Float(values.count)
 }
 
-func setDeviceVolume(_ dev: AudioObjectID, _ v: Float) {
-    guard dev != 0 else { return }
-    var addr = AudioObjectPropertyAddress(
-        mSelector: kAudioDevicePropertyVolumeScalar,
-        mScope: kAudioDevicePropertyScopeOutput,
-        mElement: kAudioObjectPropertyElementMain)
-    var val = v
-    var size = UInt32(MemoryLayout<Float32>.size)
-    AudioObjectSetPropertyData(dev, &addr, 0, nil, size, &val)
+/// 写入音量：主元素设备写一次；分声道设备把每个声道都设成同一个值
+/// （否则会出现“左耳变大右耳不变”）。
+@discardableResult
+func setDeviceVolume(_ dev: AudioObjectID, _ v: Float) -> Bool {
+    guard dev != 0 else { return false }
+    let elements = volumeElements(dev)
+    guard !elements.isEmpty else { return false }
+
+    let clamped = min(max(v, 0), 1)
+    var wrote = false
+    for element in elements {
+        var addr = volumeAddr(element)
+        var val = clamped
+        let size = UInt32(MemoryLayout<Float32>.size)
+        if AudioObjectSetPropertyData(dev, &addr, 0, nil, size, &val) == noErr {
+            wrote = true
+        }
+    }
+    return wrote
 }
 
 // MARK: - 应用全局状态
@@ -261,12 +311,17 @@ let eventCallback: CGEventTapCallBack = { _, type, event, userInfo in
 
     let dev = state.effectiveDevice()
     guard let vol = deviceVolume(dev) else {
+        // 没有可用音量通道：不要把滚轮吞掉，否则用户会觉得“滚轮失灵”
+        if state.verboseLogging {
+            state.log("scroll: 设备 \(dev) 没有可写音量通道，放行事件")
+        }
         return Unmanaged.passUnretained(event)
     }
     let change = delta * state.step
     let newVol = min(max(vol + change, 0), 1)
     if state.verboseLogging {
-        state.log("scroll delta=\(delta) mouseY=\(mouse.y) dev=\(dev) \(vol) -> \(newVol)")
+        state.log("scroll delta=\(delta) mouseY=\(mouse.y) dev=\(dev) "
+                  + "elements=\(volumeElements(dev)) \(vol) -> \(newVol)")
     }
     setDeviceVolume(dev, newVol)
     state.osd?.show(volume: newVol)
