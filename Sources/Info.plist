@@ -8,6 +8,8 @@
 	<string>VolumeWheel</string>
 	<key>CFBundleExecutable</key>
 	<string>VolumeWheel</string>
+	<key>CFBundleIconFile</key>
+	<string>VolumeWheel</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.local.volumewheel</string>
 	<key>CFBundleLocalizations</key>

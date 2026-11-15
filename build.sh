@@ -16,6 +16,8 @@ echo "==> 写入 Info.plist 与语言资源..."
 cp Sources/Info.plist "$APP/Contents/Info.plist"
 cp -R Sources/en.lproj "$APP/Contents/Resources/"
 cp -R Sources/zh-Hans.lproj "$APP/Contents/Resources/"
+# App 图标（Finder / 启动台 / 程序坞显示的那个）
+cp Sources/VolumeWheel.icns "$APP/Contents/Resources/VolumeWheel.icns"
 
 echo "==> 签名..."
 # 可用环境变量覆盖：
